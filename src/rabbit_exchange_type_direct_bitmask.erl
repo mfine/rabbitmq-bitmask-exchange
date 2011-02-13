@@ -29,9 +29,14 @@ description() ->
     [{name, <<"direct-bitmask">>},
      {description, <<"Direct exchange with bitmasking of binding and routing keys">>}].
 
-%% Assumes that keys are integers in bit strings: r_key & b_key == r_key.
-routing_key_match(<<BindingKey>>, <<RoutingKey>>) ->
-    (RoutingKey band BindingKey) == RoutingKey.
+%% Matches arbitrary length keys: r_key & b_key == r_key.
+%% Note: RoutingKey can be < than BindingKey: 0x1 & 0xff == 0x1
+routing_key_match(<<X:8, BindingKey/binary>>, <<Y:8, RoutingKey/binary>>) ->
+    (X band Y) == Y andalso routing_key_match(BindingKey, RoutingKey);
+routing_key_match(_BindingKey, <<>>) ->
+    true;
+routing_key_match(_BindingKey, _RoutingKey) ->
+    false.
 
 %% Randomly pick a route from the list of routes.
 choose_route([]) -> 
